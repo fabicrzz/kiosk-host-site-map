@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kiosk Host Site Map</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root{
+      --sidebar-w: 350px;
+      --panel-gap: 16px;
+      --brand: #304559;
+      --ink: #111827;
+      --muted: #6b7280;
+      --card-border: #e5e7eb;
+      --shadow: 0 12px 30px rgba(2,6,23,.12);
+      --btn: #304559;
+      --blue: #304559;
+      --greyBtnBg: #eef2f4;
+      --greyBtnText: #111111;
+    }
+    *{ box-sizing: border-box; }
+    html,body { height:100%; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+    #map { height:100%; width:100%; }
+
+    #sidebar {
+      position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100%;
+      background: #fff; box-shadow: 2px 0 16px rgba(2,6,23,0.12);
+      padding: 16px; overflow-y: auto; z-index: 1000; transition: transform .28s ease;
+    }
+    #sidebar.hidden { transform: translateX(calc(-1 * var(--sidebar-w))); }
+
+    .search-wrap{ display:flex; align-items:center; justify-content:center; padding: 8px; }
+    #search {
+      width: 100%; max-width: 580px; padding: 8px 10px;
+      border: 1px solid var(--card-border); border-radius: 12px; font-size: 14px; outline: none;
+    }
+    #site-count{ text-align:center; color: var(--muted); font-size: 13px; margin: 8px 0 12px; }
+
+    .site-card{
+      position: relative; border: 1px solid var(--card-border); border-radius: 14px;
+      padding: 12px 12px 44px 12px; margin-bottom: 12px; cursor: pointer;
+      transition: box-shadow .2s ease, transform .2s ease; background:#fff;
+    }
+    .site-card:hover{ box-shadow: var(--shadow); transform: translateY(-1px); }
+    .org-name{ font-weight: 600; margin:0 0 4px 0; }
+    .org-address{ color: var(--muted); font-size: 13px; margin:0; }
+
+    .corner-slot{ position: absolute; right: 10px; bottom: 10px; }
+    .res-chip{
+      background: #d7dbf0; color: #1c1c1f; padding: 8px 10px; font-size: 12px;
+      border-radius: 10px; border: 1px solid #e9e7ff; cursor: default;
+    }
+    .reserve-btn{
+      background: var(--brand); color:#fff; border: none; border-radius: 10px;
+      padding: 8px 10px; font-size: 12px; cursor: pointer;
+    }
+    .reserve-btn:hover{ filter: brightness(.95); }
+
+    #toggle-btn{
+      position: fixed; top: 16px; left: 16px; background: var(--brand); color: #fff; border: none;
+      padding: 10px 12px; border-radius: 12px; cursor: pointer; z-index: 1100;
+      transition: left .28s ease, width .2s ease, padding .2s ease; box-shadow: var(--shadow);
+      font-weight: 600;
+    }
+#sidebar.hidden ~ #toggle-btn{
+  min-width: 120px;      
+  width: auto;
+  padding: 10px 12px;    
+  text-align: left;
+}
+
+#sidebar:not(.hidden) ~ #toggle-btn{
+  left: calc(var(--sidebar-w) + var(--panel-gap));
+  min-width: 0;          
+  width: 44px;
+  padding: 10px 0;
+  text-align: center;
+}
+    #controls{
+  position: fixed;
+  top: 16px;
+  left: calc(16px + 120px + 12px);  
+  transform: none;                  
+  z-index: 1050;
+  display:flex; gap:8px; flex-wrap:wrap;
+  transition: left .28s ease;
+}
+    .ctl-btn{
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      background:#304559; color:#fff; border:1px solid var(--card-border);
+      border-radius: 12px; padding: 9px 12px; cursor:pointer; box-shadow: var(--shadow);
+      display:flex; align-items:center; gap:8px; font-size:14px;
+    }
+    .ctl-btn.active{ outline: 2px solid var(--btn); background:#eef2ff; }
+
+    .dropdown{ position: relative; }
+    .panel{
+      position: absolute; top: calc(100% + 8px); left: 0; min-width: 260px; max-height: 60vh; overflow:auto;
+      background:#fff; border:1px solid var(--card-border); border-radius: 12px; padding: 12px; box-shadow: var(--shadow);
+      display:none; z-index: 1200;
+    }
+    .dropdown.open .panel{ display:block; }
+    .row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:14px; }
+
+    #custom-popup{
+      position: fixed; bottom: 12px; left: 12px; max-width: 420px; background: #fff;
+      border-radius: 14px; padding: 16px 16px 18px; box-shadow: var(--shadow); z-index: 1000;
+      transition: left .28s ease; border: 1px solid var(--card-border);
+    }
+    #custom-popup.hidden{ display:none; 
+    }
+    #sidebar:not(.hidden) ~ #custom-popup{
+  left: calc(var(--sidebar-w) + var(--panel-gap) + 24px);
+}
+    #sidebar:not(.hidden) ~ #controls{
+  left: calc(var(--sidebar-w) + var(--panel-gap) + 44px + 12px);
+}
+.filter-hr {
+  height: 1px;
+  background: var(--card-border); 
+  border: 0;
+  margin: 10px 0;
+}
+.filter-header {
+  font-size: 14px;
+  color: var(--muted);   
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+.pop-close{
+  position:absolute;
+  top: 4px;          
+  right: 8px;        
+  width: 24px;       
+  height: 24px;      
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;   
+  line-height: 1;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.pop-title{
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+  padding-right: 40px;  
+}
+
+    .pop-section{ margin-top: 12px; }
+    .pop-header{ font-size: 12px; color: var(--muted); margin: 0 0 6px 0; font-weight: 600; letter-spacing:.02em; }
+    .pop-body{ font-size: 14px; color: var(--blue); margin: 0; }
+    .pop-hr{ height: 1px; background: var(--card-border); border: 0; margin: 12px 0; }
+    .row-between{ display:flex; align-items:center; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+    .btn-oval{
+      border: 1px solid #d1d5db; background: var(--greyBtnBg); color: var(--greyBtnText);
+      border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+    }
+    .btn-oval:hover{ filter: brightness(.98); }
+
+    .leaflet-bottom.leaflet-right { margin: 12px; }
+
+    .pin { width: 18px; height: 24px; }
+  </style>
+</head>
+<body>
+
+  <aside id="sidebar" class="hidden">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search by name, city, or zip…" />
+    </div>
+    <div id="site-count">Showing 0 of 0</div>
+    <div id="site-list"></div>
+  </aside>
+
+  <button id="toggle-btn">→ Show List</button>
+
+  <div id="controls">
+    <div class="dropdown" id="dd-state">
+      <button class="ctl-btn" id="btn-state">State ▾</button>
+      <div class="panel" id="panel-state">
+        <div class="row" style="justify-content:space-between">
+          <strong>States</strong>
+          <button id="clear-states" class="ctl-btn" style="padding:6px 10px">Clear</button>
+        </div>
+        <div id="state-checks"></div>
+      </div>
+    </div>
+
+    <button class="ctl-btn" id="btn-printer" aria-pressed="false">Printer</button>
+
+    <button class="ctl-btn" id="btn-privacy" aria-pressed="false">Privacy</button>
+
+    <div class="dropdown" id="dd-res">
+      <button class="ctl-btn" id="btn-res">Reservation Type ▾</button>
+      <div class="panel" id="panel-res">
+        <div class="row"><label><input type="radio" name="res" value="" checked> Any</label></div>
+        <div class="row"><label><input type="radio" name="res" value="Reserve Online"> Reserve Online</label></div>
+        <div class="row"><label><input type="radio" name="res" value="Call to Reserve"> Call to Reserve</label></div>
+        <div class="row"><label><input type="radio" name="res" value="Walk-Ins Only"> Walk-Ins Only</label></div>
+      </div>
+    </div>
+
+    <div class="dropdown" id="dd-all">
+      <button class="ctl-btn" id="btn-all">Filters ▾</button>
+      <div class="panel" id="panel-all">
+  <div class="filter-header">States</div>
+  <div id="state-checks-all" style="margin-bottom:12px"></div>
+
+  <hr class="filter-hr" />
+
+  <div class="filter-header">Privacy for Video Meetings</div>
+  <div class="row"><label><input type="checkbox" id="all-privacy"> Yes</label></div>
+
+  <hr class="filter-hr" />
+
+  <div class="filter-header">Printer</div>
+  <div class="row"><label><input type="checkbox" id="all-printer"> Yes</label></div>
+
+  <hr class="filter-hr" />
+
+  <div class="filter-header">Reservation Type</div>
+  <div class="row"><label><input type="radio" name="res-all" value="" checked> Any</label></div>
+  <div class="row"><label><input type="radio" name="res-all" value="Reserve Online"> Reserve Online</label></div>
+  <div class="row"><label><input type="radio" name="res-all" value="Call to Reserve"> Call to Reserve</label></div>
+  <div class="row"><label><input type="radio" name="res-all" value="Walk-in Only"> Walk-in Only</label></div>
+
+  <div class="row" style="justify-content:flex-end; gap:8px; margin-top:10px">
+    <button id="all-reset" class="ctl-btn">Reset</button>
+    <button id="all-apply" class="ctl-btn" style="background:var(--btn);color:#fff;border-color:var(--btn)">Apply</button>
+  </div>
+</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="custom-popup" class="hidden"></div>
+
+  <script>
+    const map = L.map("map", { zoomControl: false }).setView([39.5, -98.5], 4);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    L.tileLayer("https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO"
+    }).addTo(map);
+
+    const sidebar   = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const popupDiv  = document.getElementById("custom-popup");
+    const siteList  = document.getElementById("site-list");
+    const siteCount = document.getElementById("site-count");
+    const searchInp = document.getElementById("search");
+
+    const ddState = document.getElementById("dd-state");
+    const btnState = document.getElementById("btn-state");
+    const panelState = document.getElementById("panel-state");
+    const stateChecks = document.getElementById("state-checks");
+    const clearStates = document.getElementById("clear-states");
+
+    const btnPrinter = document.getElementById("btn-printer");
+    const btnPrivacy = document.getElementById("btn-privacy");
+
+    const ddRes = document.getElementById("dd-res");
+    const btnRes = document.getElementById("btn-res");
+    const panelRes = document.getElementById("panel-res");
+
+    const ddAll = document.getElementById("dd-all");
+    const btnAll = document.getElementById("btn-all");
+    const panelAll = document.getElementById("panel-all");
+    const stateChecksAll = document.getElementById("state-checks-all");
+    const allPrivacy = document.getElementById("all-privacy");
+    const allPrinter = document.getElementById("all-printer");
+    const allApply = document.getElementById("all-apply");
+    const allReset = document.getElementById("all-reset");
+
+    function toggleDrop(drop){
+      const isOpen = drop.classList.contains("open");
+      [ddState, ddRes, ddAll].forEach(d => d.classList.remove("open"));
+      if (!isOpen) drop.classList.add("open");
+    }
+    btnState.onclick = () => toggleDrop(ddState);
+    btnRes.onclick = () => toggleDrop(ddRes);
+    btnAll.onclick = () => toggleDrop(ddAll);
+    document.addEventListener("click", (e) => {
+      if (![ddState, ddRes, ddAll].some(d => d.contains(e.target))) {
+        ddState.classList.remove("open"); ddRes.classList.remove("open"); ddAll.classList.remove("open");
+      }
+    });
+
+    function updateToggleLabel(){
+      toggleBtn.textContent = sidebar.classList.contains("hidden") ? "→ Show List" : "←";
+    }
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("hidden");
+      updateToggleLabel();
+    });
+
+    const items = []; 
+    let ALL = [];
+    let FILTERED = [];
+    let HIGHLIGHTED_ID = null;
+
+    function makePinIcon({fill="#539dd6", stroke="#ffffff", selected=false}={}){
+      const w=24, h=32;
+      const path = 'M12 0C5.373 0 0 5.373 0 12c0 8.25 10.5 19.2 11.1 19.82a1.3 1.3 0 0 0 1.8 0C13.5 31.2 24 20.25 24 12 24 5.373 18.627 0 12 0zm0 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z';
+      const html = `
+        <svg class="pin" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="${selected?2:1}"/>
+        </svg>`;
+      return L.divIcon({
+        html, className: "", iconSize: [w,h], iconAnchor: [w/2, h] 
+      });
+    }
+
+    const baseIcon = () => makePinIcon({fill:"#539dd6"});
+    const highlightIcon = () => makePinIcon({fill:"#333333", selected:true});
+
+    function bringToFront(marker){
+      if (marker.setZIndexOffset) marker.setZIndexOffset(1000);
+    }
+    function sendToNormal(marker){
+      if (marker.setZIndexOffset) marker.setZIndexOffset(0);
+    }
+
+    function highlight(id){
+      if (HIGHLIGHTED_ID !== null && items[HIGHLIGHTED_ID] && items[HIGHLIGHTED_ID].marker) {
+        items[HIGHLIGHTED_ID].marker.setIcon(baseIcon());
+        sendToNormal(items[HIGHLIGHTED_ID].marker);
+      }
+      HIGHLIGHTED_ID = id;
+      if (id !== null && items[id] && items[id].marker) {
+        items[id].marker.setIcon(highlightIcon());
+        bringToFront(items[id].marker);
+      }
+    }
+
+    function makeCardHTML(d){
+      const hasReservation = (d["Reservation Type"] || "").trim() !== "";
+      const reserveUrl = (d["Reserve Here"] || "").trim();
+      return `
+        <div class="site-card" data-id="${(d.__id || "")}">
+          <h4 class="org-name">${d["Organization Name"] || "Organization"}</h4>
+          <p class="org-address">${[d.Address, d.State].filter(Boolean).join(", ")}</p>
+          <div class="corner-slot">
+            ${
+              hasReservation
+                ? `<span class="res-chip">${d["Reservation Type"]}</span>`
+                : (reserveUrl ? `<button class="reserve-btn" onclick="window.open('${reserveUrl}','_blank');event.stopPropagation();">Reserve Online</button>` : "")
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function makePopupHTML(d){
+      const hasReservation = (d["Reservation Type"] || "").trim() !== "";
+      const reserveUrl = (d["Reserve Here"] || "").trim();
+      const row = (label, value) => `
+        <div class="pop-section">
+          <div class="pop-header">${label}</div>
+          <p class="pop-body">${value || "N/A"}</p>
+        </div>
+      `;
+      const addressRow = `
+        <div class="pop-section">
+          <div class="pop-header">Address</div>
+          <div class="row-between">
+            <p class="pop-body" style="flex:1 1 auto;">${d.Address || ""}</p>
+            <button class="btn-oval"
+              onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d.Address || "")}','_blank')">Directions</button>
+          </div>
+        </div>
+      `;
+      const headerReserve = (!hasReservation && reserveUrl)
+        ? `<button style="width:100%;display:block;margin:6px 0 8px 0;padding:10px 12px;background:${getComputedStyle(document.documentElement).getPropertyValue('--blue')};color:#fff;border:none;border-radius:10px;cursor:pointer"
+            onclick="window.open('${reserveUrl}','_blank')">Reserve Online</button>`
+        : ``;
+
+      let inner = `
+        <div style="position:relative">
+          <button class="pop-close" id="pop-close" title="Close">&times;</button>
+          <h3 class="pop-title">${d["Organization Name"] || "Organization"}</h3>
+          ${headerReserve}
+          ${addressRow}
+          <hr class="pop-hr" />
+
+          <div class="pop-section"><div class="pop-header">Hours</div><p class="pop-body">${d.Hours || "N/A"}</p></div>
+          <hr class="pop-hr" />
+
+          ${row("Organization Name", d["Organization Name"])} <hr class="pop-hr" />
+          ${row("Phone", d.Phone)} <hr class="pop-hr" />
+          ${row("Printer", d.Printer)} <hr class="pop-hr" />
+          ${row("Privacy for Video Meetings", d["Privacy for Video Meetings"])} <hr class="pop-hr" />
+      `;
+      if (hasReservation) {
+        inner += `${row("Reservation Type", d["Reservation Type"])} <hr class="pop-hr" />`;
+      } else {
+        const reserveHereRow = `
+          <div class="pop-section">
+            <div class="pop-header">Reserve Here</div>
+            <div class="row-between">
+              <p class="pop-body" style="flex:1 1 auto;">${reserveUrl ? reserveUrl : "N/A"}</p>
+              ${reserveUrl ? `<button class="btn-oval" onclick="window.open('${reserveUrl}','_blank')">Visit</button>` : ``}
+            </div>
+          </div>
+          <hr class="pop-hr" />
+        `;
+        inner += reserveHereRow;
+      }
+      inner += `${row("State", d.State)}</div>`;
+      return inner;
+    }
+
+    function attachMarker(d){
+      const lat = parseFloat(d.Latitude), lng = parseFloat(d.Longitude);
+      if (isNaN(lat) || isNaN(lng)) return null;
+      const m = L.marker([lat, lng], { icon: baseIcon(), zIndexOffset: 0 }).addTo(map);
+      m.on("click", () => {
+        highlight(d.__id);
+        popupDiv.innerHTML = makePopupHTML(d);
+        popupDiv.classList.remove("hidden");
+        const closeBtn = popupDiv.querySelector("#pop-close");
+        if (closeBtn) closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+      });
+      return m;
+    }
+
+    function renderList(rows){
+      siteList.innerHTML = "";
+      rows.forEach((d) => {
+        const idx = d.__id;
+        const wrap = document.createElement("div");
+        wrap.innerHTML = makeCardHTML(d);
+        const card = wrap.firstElementChild;
+        card.addEventListener("click", () => {
+          const obj = items[idx];
+          if (!obj) return;
+          highlight(idx); 
+          popupDiv.innerHTML = makePopupHTML(obj.data);
+          popupDiv.classList.remove("hidden");
+          const closeBtn = popupDiv.querySelector("#pop-close");
+          if (closeBtn) closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+        });
+        siteList.appendChild(card);
+      });
+    }
+
+    function updateCount(){ siteCount.textContent = `Showing ${FILTERED.length} of ${ALL.length}`; }
+
+    function visibilitySync(){
+      const visibleIds = new Set(FILTERED.map(r => r.__id));
+      items.forEach((obj, i) => {
+        if (!obj || !obj.marker) return;
+        if (visibleIds.has(i)) {
+          if (!map.hasLayer(obj.marker)) obj.marker.addTo(map);
+        } else {
+          if (map.hasLayer(obj.marker)) obj.marker.removeFrom(map);
+        }
+      });
+      if (HIGHLIGHTED_ID !== null && !visibleIds.has(HIGHLIGHTED_ID)) {
+        highlight(null);
+        popupDiv.classList.add("hidden");
+      }
+    }
+
+    const filters = { states: new Set(), printer: false, privacy: false, reservation: "", search: "" };
+    function setBtnActive(btn, active){ btn.classList.toggle("active", !!active); btn.setAttribute("aria-pressed", String(!!active)); }
+
+    function applyFilters(){
+      const term = (filters.search || "").toLowerCase();
+      FILTERED = ALL.filter(d => {
+        if (term) {
+          const hay = `${d["Organization Name"]||""} ${d.Address||""} ${d.State||""}`.toLowerCase();
+          if (!hay.includes(term)) return false;
+        }
+        if (filters.states.size && !filters.states.has(d.State)) return false;
+        if (filters.printer) {
+          const v = (d.Printer || "").toString().trim().toLowerCase();
+          if (!(v==="yes"||v==="y"||v==="true"||v==="1")) return false;
+        }
+        if (filters.privacy) {
+          const v = (d["Privacy for Video Meetings"] || "").toString().trim().toLowerCase();
+          if (!(v==="yes"||v==="y"||v==="true"||v==="1")) return false;
+        }
+        if (filters.reservation && (d["Reservation Type"]||"").trim() !== filters.reservation) return false;
+        return true;
+      });
+      renderList(FILTERED);
+      visibilitySync();
+      updateCount();
+    }
+
+    function buildStateCheckboxes(){
+      const states = Array.from(new Set(ALL.map(d => d.State).filter(Boolean))).sort();
+      const stateChecksAll = document.getElementById("state-checks-all");
+      stateChecks.innerHTML = ""; stateChecksAll.innerHTML = "";
+
+      states.forEach(st => {
+        const mk = (cls) => {
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `<label><input type="checkbox" value="${st}" class="${cls}"> ${st}</label>`;
+          return row;
+        };
+        const r1 = mk("cb-state"); const r2 = mk("cb-state-all");
+        stateChecks.appendChild(r1); stateChecksAll.appendChild(r2);
+      });
+
+      stateChecks.addEventListener("change", (e) => {
+        if (e.target.classList.contains("cb-state")) {
+          const st = e.target.value;
+          e.target.checked ? filters.states.add(st) : filters.states.delete(st);
+          document.querySelectorAll(".cb-state-all").forEach(cb => { if (cb.value===st) cb.checked = e.target.checked; });
+          applyFilters();
+        }
+      });
+      stateChecksAll.addEventListener("change", (e) => {
+        if (e.target.classList.contains("cb-state-all")) {
+          const st = e.target.value;
+          e.target.checked ? filters.states.add(st) : filters.states.delete(st);
+          document.querySelectorAll(".cb-state").forEach(cb => { if (cb.value===st) cb.checked = e.target.checked; });
+        }
+      });
+      clearStates.onclick = () => {
+        filters.states.clear();
+        document.querySelectorAll(".cb-state, .cb-state-all").forEach(cb => cb.checked = false);
+        applyFilters();
+      };
+    }
+
+    function wireFilterButtons(){
+      btnPrinter.addEventListener("click", () => { filters.printer = !filters.printer; setBtnActive(btnPrinter, filters.printer); applyFilters(); });
+      btnPrivacy.addEventListener("click", () => { filters.privacy = !filters.privacy; setBtnActive(btnPrivacy, filters.privacy); applyFilters(); });
+
+      panelRes.addEventListener("change", (e) => {
+        if (e.target.name === "res") { filters.reservation = e.target.value; applyFilters(); }
+      });
+
+      const allPrivacy = document.getElementById("all-privacy");
+      const allPrinter = document.getElementById("all-printer");
+      const allApply = document.getElementById("all-apply");
+      const allReset = document.getElementById("all-reset");
+
+      allApply.addEventListener("click", () => {
+        filters.privacy = allPrivacy.checked; filters.printer = allPrinter.checked;
+        setBtnActive(btnPrivacy, filters.privacy); setBtnActive(btnPrinter, filters.printer);
+        const chosen = document.querySelector('input[name="res-all"]:checked');
+        filters.reservation = chosen ? chosen.value : "";
+        panelRes.querySelectorAll('input[name="res"]').forEach(r => r.checked = (r.value===filters.reservation));
+        if (!filters.reservation) (panelRes.querySelector('input[name="res"][value=""]')||{}).checked = true;
+        ddAll.classList.remove("open");
+        applyFilters();
+      });
+
+      allReset.addEventListener("click", () => {
+        filters.states.clear();
+        document.querySelectorAll(".cb-state, .cb-state-all").forEach(cb => cb.checked = false);
+        filters.printer=false; filters.privacy=false; filters.reservation=""; setBtnActive(btnPrinter,false); setBtnActive(btnPrivacy,false);
+        allPrinter.checked=false; allPrivacy.checked=false;
+        panelRes.querySelectorAll('input[name="res"]').forEach(r => r.checked = false);
+        (panelRes.querySelector('input[name="res"][value=""]')||{}).checked = true;
+        document.querySelectorAll('input[name="res-all"]').forEach(r => r.checked = false);
+        (document.querySelector('input[name="res-all"][value=""]')||{}).checked = true;
+        applyFilters();
+      });
+    }
+
+    function applySearch(){
+      filters.search = (searchInp.value || "").toLowerCase();
+      applyFilters();
+    }
+
+    Papa.parse("kiosksdata.csv?cache=" + Date.now(), {
+      download: true,
+      header: true,
+      complete: (res) => {
+        const rows = (res.data || []).filter(r => r.Latitude && r.Longitude);
+        rows.forEach((r, i) => r.__id = i);
+        ALL = rows;
+
+        rows.forEach(d => {
+          const m = attachMarker(d);
+          items[d.__id] = { marker: m, data: d, visible: true };
+        });
+
+        sidebar.classList.remove("hidden");
+        updateToggleLabel();
+
+        buildStateCheckboxes();
+        wireFilterButtons();
+
+        FILTERED = [...ALL];
+        renderList(FILTERED);
+        updateCount();
+
+        let t;
+        searchInp.addEventListener("input", () => {
+          clearTimeout(t);
+          t = setTimeout(applySearch, 140);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
+<!-- if ur looking at this in inspect element ur nosy af. send fabi a $10 nosy fee -->
