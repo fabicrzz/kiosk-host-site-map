@@ -72,29 +72,29 @@
       transition: left .28s ease, width .2s ease, padding .2s ease; box-shadow: var(--shadow);
       font-weight: 600;
     }
-#sidebar.hidden ~ #toggle-btn{
-  min-width: 120px;      
-  width: auto;
-  padding: 10px 12px;    
-  text-align: left;
-}
+    #sidebar.hidden ~ #toggle-btn{
+      min-width: 120px;      
+      width: auto;
+      padding: 10px 12px;    
+      text-align: left;
+    }
+    #sidebar:not(.hidden) ~ #toggle-btn{
+      left: calc(var(--sidebar-w) + var(--panel-gap));
+      min-width: 0;          
+      width: 44px;
+      padding: 10px 0;
+      text-align: center;
+    }
 
-#sidebar:not(.hidden) ~ #toggle-btn{
-  left: calc(var(--sidebar-w) + var(--panel-gap));
-  min-width: 0;          
-  width: 44px;
-  padding: 10px 0;
-  text-align: center;
-}
     #controls{
-  position: fixed;
-  top: 16px;
-  left: calc(16px + 120px + 12px);  
-  transform: none;                  
-  z-index: 1050;
-  display:flex; gap:8px; flex-wrap:wrap;
-  transition: left .28s ease;
-}
+      position: fixed;
+      top: 16px;
+      left: calc(16px + 120px + 12px);  
+      transform: none;                  
+      z-index: 1050;
+      display:flex; gap:8px; flex-wrap:wrap;
+      transition: left .28s ease;
+    }
     .ctl-btn{
       font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Arial, sans-serif;
       background:#304559; color:#fff; border:1px solid var(--card-border);
@@ -117,49 +117,48 @@
       border-radius: 14px; padding: 16px 16px 18px; box-shadow: var(--shadow); z-index: 1000;
       transition: left .28s ease; border: 1px solid var(--card-border);
     }
-    #custom-popup.hidden{ display:none; 
-    }
+    #custom-popup.hidden{ display:none; }
     #sidebar:not(.hidden) ~ #custom-popup{
-  left: calc(var(--sidebar-w) + var(--panel-gap) + 24px);
-}
+      left: calc(var(--sidebar-w) + var(--panel-gap) + 24px);
+    }
     #sidebar:not(.hidden) ~ #controls{
-  left: calc(var(--sidebar-w) + var(--panel-gap) + 44px + 12px);
-}
-.filter-hr {
-  height: 1px;
-  background: var(--card-border); 
-  border: 0;
-  margin: 10px 0;
-}
-.filter-header {
-  font-size: 14px;
-  color: var(--muted);   
-  font-weight: 600;
-  margin: 6px 0;
-}
+      left: calc(var(--sidebar-w) + var(--panel-gap) + 44px + 12px);
+    }
 
-.pop-close{
-  position:absolute;
-  top: 4px;          
-  right: 8px;        
-  width: 24px;       
-  height: 24px;      
-  border-radius: 6px;
-  border: 1px solid var(--card-border);
-  background: #fff;
-  cursor: pointer;
-  font-size: 14px;   
-  line-height: 1;
-  display:flex; align-items:center; justify-content:center;
-}
+    .filter-hr {
+      height: 1px;
+      background: var(--card-border); 
+      border: 0;
+      margin: 10px 0;
+    }
+    .filter-header {
+      font-size: 14px;
+      color: var(--muted);   
+      font-weight: 600;
+      margin: 6px 0;
+    }
 
-.pop-title{
-  margin: 0 0 10px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #000;
-  padding-right: 40px;  
-}
+    .pop-close{
+      position:absolute;
+      top: 4px;          
+      right: 8px;        
+      width: 24px;       
+      height: 24px;      
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;   
+      line-height: 1;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .pop-title{
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #000;
+      padding-right: 40px;  
+    }
 
     .pop-section{ margin-top: 12px; }
     .pop-header{ font-size: 12px; color: var(--muted); margin: 0 0 6px 0; font-weight: 600; letter-spacing:.02em; }
@@ -175,39 +174,68 @@
     .leaflet-bottom.leaflet-right { margin: 12px; }
 
     .pin { width: 18px; height: 24px; }
+
+
+    :focus-visible {
+      outline: 3px solid #1d4ed8;
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+    input:focus-visible, .btn-oval:focus-visible, .ctl-btn:focus-visible, #toggle-btn:focus-visible {
+      outline-offset: 3px;
+    }
+    .sr-only { position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .sr-only-focusable:focus {
+      position: static !important;
+      width: auto; height: auto;
+      padding: 8px 10px;
+      background: #111; color: #fff;
+      border-radius: 8px;
+      z-index: 2000;
+    }
   </style>
 </head>
 <body>
 
-  <aside id="sidebar" class="hidden">
+  
+  <a href="#map" class="sr-only-focusable">Skip to map</a>
+
+  <aside id="sidebar" class="hidden" role="complementary" aria-label="Kiosk list and filters">
     <div class="search-wrap">
+      <label for="search" class="sr-only">Search host sites</label>
       <input type="text" id="search" placeholder="Search by name, city, or zip…" />
     </div>
-    <div id="site-count">Showing 0 of 0</div>
-    <div id="site-list"></div>
+    <div id="site-count" aria-live="polite">Showing 0 of 0</div>
+    <div id="site-list" role="list"></div>
   </aside>
 
-  <button id="toggle-btn">→ Show List</button>
+  <button id="toggle-btn"
+          type="button"
+          aria-controls="sidebar"
+          aria-expanded="false"
+          aria-label="Show or hide list">→ Show List</button>
 
-  <div id="controls">
+  <div id="controls" role="toolbar" aria-label="Map filters">
     <div class="dropdown" id="dd-state">
-      <button class="ctl-btn" id="btn-state">State ▾</button>
-      <div class="panel" id="panel-state">
+      <button class="ctl-btn" id="btn-state" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-controls="panel-state">State ▾</button>
+      <div class="panel" id="panel-state" role="group" aria-label="Filter by state">
         <div class="row" style="justify-content:space-between">
-          <strong>States</strong>
-          <button id="clear-states" class="ctl-btn" style="padding:6px 10px">Clear</button>
+          <strong class="filter-header" aria-hidden="true">States</strong>
+          <button id="clear-states" class="ctl-btn" type="button" style="padding:6px 10px">Clear</button>
         </div>
         <div id="state-checks"></div>
       </div>
     </div>
 
-    <button class="ctl-btn" id="btn-printer" aria-pressed="false">Printer</button>
+    <button class="ctl-btn" id="btn-printer" type="button" aria-pressed="false" aria-label="Filter by printer availability">Printer</button>
 
-    <button class="ctl-btn" id="btn-privacy" aria-pressed="false">Privacy</button>
+    <button class="ctl-btn" id="btn-privacy" type="button" aria-pressed="false" aria-label="Filter by privacy for video meetings">Privacy</button>
 
     <div class="dropdown" id="dd-res">
-      <button class="ctl-btn" id="btn-res">Reservation Type ▾</button>
-      <div class="panel" id="panel-res">
+      <button class="ctl-btn" id="btn-res" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-controls="panel-res">Reservation Type ▾</button>
+      <div class="panel" id="panel-res" role="radiogroup" aria-label="Reservation type">
         <div class="row"><label><input type="radio" name="res" value="" checked> Any</label></div>
         <div class="row"><label><input type="radio" name="res" value="Reserve Online"> Reserve Online</label></div>
         <div class="row"><label><input type="radio" name="res" value="Call to Reserve"> Call to Reserve</label></div>
@@ -216,40 +244,41 @@
     </div>
 
     <div class="dropdown" id="dd-all">
-      <button class="ctl-btn" id="btn-all">Filters ▾</button>
-      <div class="panel" id="panel-all">
-  <div class="filter-header">States</div>
-  <div id="state-checks-all" style="margin-bottom:12px"></div>
+      <button class="ctl-btn" id="btn-all" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-controls="panel-all">Filters ▾</button>
+      <div class="panel" id="panel-all" role="group" aria-label="All filters">
+        <div class="filter-header">States</div>
+        <div id="state-checks-all" style="margin-bottom:12px"></div>
 
-  <hr class="filter-hr" />
+        <hr class="filter-hr" />
 
-  <div class="filter-header">Privacy for Video Meetings</div>
-  <div class="row"><label><input type="checkbox" id="all-privacy"> Yes</label></div>
+        <div class="filter-header">Privacy for Video Meetings</div>
+        <div class="row"><label><input type="checkbox" id="all-privacy"> Yes</label></div>
 
-  <hr class="filter-hr" />
+        <hr class="filter-hr" />
 
-  <div class="filter-header">Printer</div>
-  <div class="row"><label><input type="checkbox" id="all-printer"> Yes</label></div>
+        <div class="filter-header">Printer</div>
+        <div class="row"><label><input type="checkbox" id="all-printer"> Yes</label></div>
 
-  <hr class="filter-hr" />
+        <hr class="filter-hr" />
 
-  <div class="filter-header">Reservation Type</div>
-  <div class="row"><label><input type="radio" name="res-all" value="" checked> Any</label></div>
-  <div class="row"><label><input type="radio" name="res-all" value="Reserve Online"> Reserve Online</label></div>
-  <div class="row"><label><input type="radio" name="res-all" value="Call to Reserve"> Call to Reserve</label></div>
-  <div class="row"><label><input type="radio" name="res-all" value="Walk-in Only"> Walk-in Only</label></div>
+        <div class="filter-header">Reservation Type</div>
+        <div class="row"><label><input type="radio" name="res-all" value="" checked> Any</label></div>
+        <div class="row"><label><input type="radio" name="res-all" value="Reserve Online"> Reserve Online</label></div>
+        <div class="row"><label><input type="radio" name="res-all" value="Call to Reserve"> Call to Reserve</label></div>
+        <div class="row"><label><input type="radio" name="res-all" value="Walk-in Only"> Walk-in Only</label></div>
 
-  <div class="row" style="justify-content:flex-end; gap:8px; margin-top:10px">
-    <button id="all-reset" class="ctl-btn">Reset</button>
-    <button id="all-apply" class="ctl-btn" style="background:var(--btn);color:#fff;border-color:var(--btn)">Apply</button>
-  </div>
-</div>
+        <div class="row" style="justify-content:flex-end; gap:8px; margin-top:10px">
+          <button id="all-reset" class="ctl-btn" type="button">Reset</button>
+          <button id="all-apply" class="ctl-btn" type="button" style="background:var(--btn);color:#fff;border-color:var(--btn)">Apply</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div id="map"></div>
+  <div id="map" role="region" aria-label="Host sites map" tabindex="-1"></div>
 
-  <div id="custom-popup" class="hidden"></div>
+  <div id="custom-popup" class="hidden" role="dialog" aria-modal="false" aria-live="polite" aria-label="Host site details"></div>
 
   <script>
     const map = L.map("map", { zoomControl: false }).setView([39.5, -98.5], 4);
@@ -289,20 +318,51 @@
 
     function toggleDrop(drop){
       const isOpen = drop.classList.contains("open");
-      [ddState, ddRes, ddAll].forEach(d => d.classList.remove("open"));
-      if (!isOpen) drop.classList.add("open");
+      [ddState, ddRes, ddAll].forEach(d => {
+        d.classList.remove("open");
+        const b = d.querySelector("button.ctl-btn");
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+      if (!isOpen) {
+        drop.classList.add("open");
+        const b = drop.querySelector("button.ctl-btn");
+        if (b) b.setAttribute("aria-expanded", "true");
+        const firstFocusable = drop.querySelector('input, button, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) firstFocusable.focus();
+      }
     }
     btnState.onclick = () => toggleDrop(ddState);
     btnRes.onclick = () => toggleDrop(ddRes);
     btnAll.onclick = () => toggleDrop(ddAll);
+
     document.addEventListener("click", (e) => {
       if (![ddState, ddRes, ddAll].some(d => d.contains(e.target))) {
-        ddState.classList.remove("open"); ddRes.classList.remove("open"); ddAll.classList.remove("open");
+        [ddState, ddRes, ddAll].forEach(d => {
+          d.classList.remove("open");
+          const b = d.querySelector("button.ctl-btn");
+          if (b) b.setAttribute("aria-expanded", "false");
+        });
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        [ddState, ddRes, ddAll].forEach(d => {
+          d.classList.remove("open");
+          const b = d.querySelector("button.ctl-btn");
+          if (b) b.setAttribute("aria-expanded", "false");
+        });
+        if (!popupDiv.classList.contains("hidden")) {
+          popupDiv.classList.add("hidden");
+          highlight(null);
+          toggleBtn.focus({preventScroll:true});
+        }
       }
     });
 
     function updateToggleLabel(){
-      toggleBtn.textContent = sidebar.classList.contains("hidden") ? "→ Show List" : "←";
+      const isHidden = sidebar.classList.contains("hidden");
+      toggleBtn.textContent = isHidden ? "→ Show List" : "←";
+      toggleBtn.setAttribute("aria-expanded", String(!isHidden));
     }
     toggleBtn.addEventListener("click", () => {
       sidebar.classList.toggle("hidden");
@@ -352,14 +412,20 @@
       const hasReservation = (d["Reservation Type"] || "").trim() !== "";
       const reserveUrl = (d["Reserve Here"] || "").trim();
       return `
-        <div class="site-card" data-id="${(d.__id || "")}">
+        <div class="site-card"
+             data-id="${(d.__id || "")}"
+             role="listitem"
+             tabindex="0"
+             aria-label="${(d["Organization Name"] || "Organization").replace(/"/g,'&quot;')} at ${[d.Address, d.State].filter(Boolean).join(", ")}">
           <h4 class="org-name">${d["Organization Name"] || "Organization"}</h4>
           <p class="org-address">${[d.Address, d.State].filter(Boolean).join(", ")}</p>
           <div class="corner-slot">
             ${
               hasReservation
-                ? `<span class="res-chip">${d["Reservation Type"]}</span>`
-                : (reserveUrl ? `<button class="reserve-btn" onclick="window.open('${reserveUrl}','_blank');event.stopPropagation();">Reserve Online</button>` : "")
+                ? `<span class="res-chip" aria-label="Reservation type ${d["Reservation Type"]}">${d["Reservation Type"]}</span>`
+                : (reserveUrl ? `<button class="reserve-btn" type="button"
+                     onclick="window.open('${reserveUrl}','_blank');event.stopPropagation();"
+                     aria-label="Reserve online">Reserve Online</button>` : "")
             }
           </div>
         </div>
@@ -387,13 +453,14 @@
       `;
       const headerReserve = (!hasReservation && reserveUrl)
         ? `<button style="width:100%;display:block;margin:6px 0 8px 0;padding:10px 12px;background:${getComputedStyle(document.documentElement).getPropertyValue('--blue')};color:#fff;border:none;border-radius:10px;cursor:pointer"
-            onclick="window.open('${reserveUrl}','_blank')">Reserve Online</button>`
+            onclick="window.open('${reserveUrl}','_blank')"
+            aria-label="Reserve online on website">Reserve Online</button>`
         : ``;
 
       let inner = `
         <div style="position:relative">
-          <button class="pop-close" id="pop-close" title="Close">&times;</button>
-          <h3 class="pop-title">${d["Organization Name"] || "Organization"}</h3>
+          <button class="pop-close" id="pop-close" title="Close" aria-label="Close dialog">&times;</button>
+          <h3 class="pop-title" id="pop-title">${d["Organization Name"] || "Organization"}</h3>
           ${headerReserve}
           ${addressRow}
           <hr class="pop-hr" />
@@ -433,8 +500,12 @@
         highlight(d.__id);
         popupDiv.innerHTML = makePopupHTML(d);
         popupDiv.classList.remove("hidden");
+        popupDiv.setAttribute("aria-labelledby", "pop-title");
         const closeBtn = popupDiv.querySelector("#pop-close");
-        if (closeBtn) closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+        if (closeBtn) {
+          closeBtn.focus();
+          closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+        }
       });
       return m;
     }
@@ -446,15 +517,29 @@
         const wrap = document.createElement("div");
         wrap.innerHTML = makeCardHTML(d);
         const card = wrap.firstElementChild;
-        card.addEventListener("click", () => {
+
+        const activate = () => {
           const obj = items[idx];
           if (!obj) return;
           highlight(idx); 
           popupDiv.innerHTML = makePopupHTML(obj.data);
           popupDiv.classList.remove("hidden");
+          popupDiv.setAttribute("aria-labelledby", "pop-title");
           const closeBtn = popupDiv.querySelector("#pop-close");
-          if (closeBtn) closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+          if (closeBtn) {
+            closeBtn.focus();
+            closeBtn.onclick = () => { popupDiv.classList.add("hidden"); highlight(null); };
+          }
+        };
+
+        card.addEventListener("click", activate);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            activate();
+          }
         });
+
         siteList.appendChild(card);
       });
     }
@@ -563,6 +648,8 @@
         panelRes.querySelectorAll('input[name="res"]').forEach(r => r.checked = (r.value===filters.reservation));
         if (!filters.reservation) (panelRes.querySelector('input[name="res"][value=""]')||{}).checked = true;
         ddAll.classList.remove("open");
+        const b = ddAll.querySelector("button.ctl-btn");
+        if (b) b.setAttribute("aria-expanded", "false");
         applyFilters();
       });
 
